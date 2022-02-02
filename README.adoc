@@ -1,0 +1,95 @@
+= MiniJava: a subset of Java as an executable DSL
+:sectnums:
+:toc:
+
+
+This repository contains the complete definition of MiniJava, a "re-implementation" of a small subset of Java as an executable DSL.
+MiniJava was created in the Eclipse GEMOC Studio Language Workbench, and can be deployed in a Eclipse GEMOC Studio Modeling Workbench for creating, executing and debugging MiniJava programs.
+
+Example of a valid MiniJava program:
+
+```java
+class BubbleSorter {
+
+    public void bubbleSort(int[] arr, int n) {
+        if (n != 1) {
+            for (int i = 0; i<n-1; i = i+1) {
+                if (arr[i]> arr[i+1]) {
+                    int temp = arr[i];
+                    arr[i] = arr[i+1];
+                    arr[i+1] = temp;
+                }
+            }            
+            this.bubbleSort(arr, n-1);
+        }
+    }
+
+    public void display(int[] arr) {
+        for (int i = 0;
+        i<arr.length; i = i +1) {
+            System.out.println(arr[i]);
+        }
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        BubbleSorter bs = new BubbleSorter();
+        int[] arr = new int[6];
+        arr[0] = 6;
+        arr[1] = 4;
+        arr[2] = 5;
+        arr[3] = 12;
+        arr[4] = 11;
+        arr[5] = 9;
+        bs.bubbleSort(arr, arr.length);
+        bs.display(arr);
+    }
+}
+```
+
+== Description
+
+=== Scope
+
+MiniJava is an interpreted object-oriented imperative language that shares the same syntax as a small subset of Java.
+It was designed only for research purposes, to have an easily accessible language that shares some of the complexity of a "real-world" programming language, while built with the same tools and technologies as Domain-Specific Languages (DSLs).
+
+In principle, every MiniJava program is a valid Java program with the same semantics.
+
+Some differences with Java: 
+
+- it is possible to have multiple type declarations in the same MiniJava file (which uses the `.minijava` extension), and the name of a MiniJava file does not have to match the name of a type declaration that is found in the file.
+- the package declaration at the beginning of a file will apply to all type declarations that are found in the file, and the folder structure does not have to match the package declaration
+- Some attributes / methods are hard-coded as keywords, such as `System.out.println` or `myArray.length`, instead of being provided as attributes/methods.
+- no `i++`
+- no empty return
+- static not properly handled (except for finding the main method)
+- `this` must always be used explicitly
+- no creation of arrays directly with values (eg. `int[] x = {1,4,5,6}`)
+
+=== Repository structure
+
+TODO
+
+=== Implementation
+
+MiniJava was developped using the Eclipse GEMOC Studio Language Workbench:
+
+- Ecore is used to define the abstract syntax and to define the runtime state of the interpreter,
+- Xtext is used to define the concrete textual syntax,
+- Kermeta is used to define the operational semantics (ie. the interpreter).
+
+
+TODO Links to AS and RTD metamodels
+
+TODO description of plugins
+
+== Compilation
+
+TODO Load in GEMOC
+
+== Use
+
+TODO Start from GEMOC
+

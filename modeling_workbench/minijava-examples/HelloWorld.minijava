@@ -1,5 +1,12 @@
 class HelloWorld {
+
+	public void printHello() {
+		String message = "Hello world!";
+		System.out.println(message);
+	}
+
 	public static void main(String[] args) {
-		System.out.println("Hello world!");
+		HelloWorld helloWorld = new HelloWorld();
+		helloWorld.printHello();
 	}
 }

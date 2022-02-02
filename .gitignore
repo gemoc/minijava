@@ -6,3 +6,4 @@ xtend-gen
 *.xtendbin
 target
 staticdispatch-gen
+gemoc-gen

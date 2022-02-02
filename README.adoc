@@ -52,44 +52,59 @@ class Main {
 
 === Scope
 
-MiniJava is an interpreted object-oriented imperative language that shares the same syntax as a small subset of Java.
+MiniJava is an interpreted object-oriented imperative language that shares the same syntax as a small subset of older versions of Java (near 1.4−1.5).
 It was designed only for research purposes, to have an easily accessible language that shares some of the complexity of a "real-world" programming language, while built with the same tools and technologies as Domain-Specific Languages (DSLs).
 
-In principle, every MiniJava program is a valid Java program with the same semantics.
+In principle, every MiniJava program (using the `.minijava` extension) is a valid Java program with the same semantics.
 
-Some differences with Java: 
+Some features of MiniJava (not exhaustive):
 
-- it is possible to have multiple type declarations in the same MiniJava file (which uses the `.minijava` extension), and the name of a MiniJava file does not have to match the name of a type declaration that is found in the file.
-- the package declaration at the beginning of a file will apply to all type declarations that are found in the file, and the folder structure does not have to match the package declaration
-- Some attributes / methods are hard-coded as keywords, such as `System.out.println` or `myArray.length`, instead of being provided as attributes/methods.
-- no `i++`
-- no empty return
-- static not properly handled (except for finding the main method)
-- `this` must always be used explicitly
-- no creation of arrays directly with values (eg. `int[] x = {1,4,5,6}`)
+- Support interfaces, classes, methods (which can be `public` or `private`) ;
+- Support loops (`while`, `for`), and simple conditionals (`if`) ;
+- Support integers (`int`), strings (`String`), booleans (`boolean`), arrays (eg. `int[]`) ;
+- Support imports (`import`) ;
+- Support all common arithmetic and boolean operators.
+
+Some differences with Java (not exhaustive): 
+
+- It is possible to have multiple type declarations in the same MiniJava file, and the name of a MiniJava file does not have to match the name of a type declaration that is found in the file ;
+- The package declaration at the beginning of a file will apply to all type declarations that are found in the file, and the folder structure does not have to match the package declaration ;
+- Some typical Java attributes and methods are hard-coded as MiniJava keywords, such as `System.out.println` or `myArray.length` ;
+- The `static` modifier on methods is available in the syntax, but not properly handled (except for finding the `main` method) ;
+- When using attributes and methods of an enclosing class, the keyword `this` must always be used explicitly ;
+- Many operators missing, such as increment/decrement operators (eg`i++`) ;
+- No `switch` ;
+- No empty `return` statement ;
+- No direct creation of arrays directly values (eg. `int[] x = {1,4,5,6}`) ;
+- No generic types (eg. `List<Integer>`).
 
 === Repository structure
 
-TODO
+The repository comes with two folders:
+
+- `language_workbench` contains the language definition in the form of a set of Eclipse plugins that can be loaded in the Eclipse GEMOC Studio (see next sections).
+- `modeling_workbench` contains one Eclipse project with a couple of MiniJava programs that can be executed.
 
 === Implementation
 
 MiniJava was developped using the Eclipse GEMOC Studio Language Workbench:
 
-- Ecore is used to define the abstract syntax and to define the runtime state of the interpreter,
-- Xtext is used to define the concrete textual syntax,
-- Kermeta is used to define the operational semantics (ie. the interpreter).
+- *Ecore* is used to define the abstract syntax and to define the runtime state of the interpreter (`org.tetrabox.minijava.model` plugin),
+- *Xtext* is used to define the concrete textual syntax (`org.tetrabox.minijava.xtext` plugin),
+- *Kermeta* is used to define the operational semantics, ie. the interpreter (`org.tetrabox.minijava.semantics` plugin).
+
+link:https://github.com/gemoc/minijava/raw/master/language_workbench/org.tetrabox.minijava.model/model/XMiniJava_abstractsyntax.pdf[PDF showing the Ecore abstract syntax]
+
+link:https://github.com/gemoc/minijava/raw/master/language_workbench/org.tetrabox.minijava.model/model/XMiniJava_semantics.pdf[PDF showing the Ecore definition of the runtime state of the interpreter]
 
 
-TODO Links to AS and RTD metamodels
+== Compilation and use
 
-TODO description of plugins
-
-== Compilation
-
-TODO Load in GEMOC
-
-== Use
-
-TODO Start from GEMOC
-
+. To *compile* MiniJava, start the Eclipse GEMOC Studio, import all plugin projects from the `language_workbench` folder, and wait until the compilation is done.
+If there are no errors, then the compilation is done.
+. To *use* MiniJava, first do the compilation (previous point), then start a new development Eclipse instance (_Run Configurations_ → 
+** To write a MiniJava program, create a file with the `.minijava` extension, and start coding.
+** To run a MiniJava program, create a new _Run Configuration_ of type _Executable model with GEMOC Java engine_, where you select the model and the language, and then press _Run_.
+** To debug a MiniJava program, use the _Run Configuration_ from the previous point, but this time check the _Break at start_ box, and press the _Debug_ button. 
+The execution will then start in debug mode from the beginning of the execution (note: breakpoints are not available).
+** If you want you can import the Eclipse project available in `modeling_workbench`, and have a look at (and/or run) the provided examples.

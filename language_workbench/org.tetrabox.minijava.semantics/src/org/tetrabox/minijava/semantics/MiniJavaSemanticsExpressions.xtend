@@ -63,7 +63,6 @@ import static extension org.tetrabox.minijava.semantics.ValueToStringAspect.*
 
 @Aspect(className=Expression)
 class ExpressionAspect {
-
 	def Value evaluateExpression(State state) {
 		throw new RuntimeException('''evaluate should be overriden for type «_self.class.name»''')
 	}

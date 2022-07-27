@@ -30,12 +30,17 @@ import static extension org.tetrabox.minijava.semantics.ContextAspect.*
 import static extension org.tetrabox.minijava.semantics.ExpressionAspect.*
 import static extension org.tetrabox.minijava.semantics.StateAspect.*
 import static extension org.tetrabox.minijava.semantics.ValueToStringAspect.*
+import org.tetrabox.minijava.model.miniJava.semantics.Value
+import org.tetrabox.minijava.model.miniJava.semantics.SymbolBinding
+import org.tetrabox.minijava.model.miniJava.semantics.Context
+import org.tetrabox.minijava.model.miniJava.semantics.ObjectInstance
+import org.tetrabox.minijava.model.miniJava.semantics.ArrayInstance
 
 @Aspect(className=Block)
 class BlockAspect extends StatementAspect {
 
 	def void evaluateStatementKeepContext(State state) {
-		state.pushNewContext
+		_self.doPushNextContext(state)
 		val currentFrame = state.findCurrentFrame
 		var i = _self.statements.iterator
 		while (i.hasNext && currentFrame.returnValue === null) {
@@ -46,8 +51,21 @@ class BlockAspect extends StatementAspect {
 	@OverrideAspectMethod
 	def void evaluateStatement(State state) {
 		_self.evaluateStatementKeepContext(state)
+		_self.doPopCurrentContext(state)
+	}
+
+	// Observe only
+	@Step
+	def void doPushNextContext(State state) {
+		state.pushNewContext
+	}
+
+	// Observe only
+	@Step
+	def void doPopCurrentContext(State state) {
 		state.popCurrentContext
 	}
+
 }
 
 @Aspect(className=Statement)
@@ -63,9 +81,22 @@ class PrintStatementAspect extends StatementAspect {
 	@OverrideAspectMethod
 	@Step
 	def void evaluateStatement(State state) {
-		val string = _self.expression.evaluateExpression(state).customToString
-		state.println(string)
+		val printedValue = _self.evaluatePrintExpression(state)
+		_self.doPrint(state, printedValue)
 	}
+
+	// Observe only
+	@Step
+	def String evaluatePrintExpression(State state) {
+		return _self.expression.evaluateExpression(state).customToString
+	}
+
+	// Observe only
+	@Step
+	def void doPrint(State state, String printedValue) {
+		state.println(printedValue)
+	}
+
 }
 
 @Aspect(className=Assignment)
@@ -74,42 +105,93 @@ class AssigmentAspect extends StatementAspect {
 	@Step
 	def void evaluateStatement(State state) {
 		val context = state.findCurrentContext
-		val right = _self.value.evaluateExpression(state)
+		val right = _self.evaluateValue(state)
 		val assignee = _self.assignee
 		switch (assignee) {
 			SymbolRef: {
 				val existingBinding = context.findBinding(assignee.symbol)
-				existingBinding.value = right
+				_self.doAssignment(existingBinding, right)
 			}
 			VariableDeclaration: {
 				val binding = SemanticsFactory::eINSTANCE.createSymbolBinding => [
 					symbol = assignee
 					value = right
 				]
-				context.bindings.add(binding)
+				_self.doAssignment(context, binding)
 			}
 			FieldAccess: {
 				val f = assignee.field as Field
-				val realReceiver = (assignee.receiver.evaluateExpression(state) as ObjectRefValue).instance
-				val existingBinding = realReceiver.fieldbindings.findFirst[it.field === f]
-				if (existingBinding !== null) {
-					existingBinding.value = right
-				} else {
-					val binding = SemanticsFactory::eINSTANCE.createFieldBinding => [
-						field = f
-						value = right
-					]
-					realReceiver.fieldbindings.add(binding)
-				}
+				val realReceiver = _self.evaluateAssignee(state, assignee)
+				_self.doAssignment(realReceiver, f, right)
 			}
 			ArrayAccess: {
-				val array = (assignee.object.evaluateExpression(state) as ArrayRefValue).instance
-				val index = (assignee.index.evaluateExpression(state) as IntegerValue).value
-				array.value.set(index,right) 
+				val array = _self.evaluateArray(state, assignee)
+				val index = _self.evaluateIndex(state, assignee)
+				_self.doAssignment(array, index, right)
+
 			}
-			default: throw new Exception("Cannot assign a value to "+assignee)
+			default:
+				throw new Exception("Cannot assign a value to " + assignee)
 		}
 	}
+
+	// Observe only
+	@Step
+	def Value evaluateValue(State state) {
+		return _self.value.evaluateExpression(state)
+	}
+
+	// Observe only
+	@Step
+	def ObjectInstance evaluateAssignee(State state, FieldAccess assignee) {
+		return (assignee.receiver.evaluateExpression(state) as ObjectRefValue).instance
+	}
+
+	// Observe only
+	@Step
+	def ArrayInstance evaluateArray(State state, ArrayAccess assignee) {
+		return (assignee.object.evaluateExpression(state) as ArrayRefValue).instance
+	}
+
+	// Observe only
+	@Step
+	def int evaluateIndex(State state, ArrayAccess assignee) {
+		return (assignee.index.evaluateExpression(state) as IntegerValue).value
+	}
+
+	// Observe only
+	@Step
+	def void doAssignment(SymbolBinding existingBinding, Value value) {
+		existingBinding.value = value
+	}
+
+	// Observe only
+	@Step
+	def void doAssignment(Context context, SymbolBinding newBinding) {
+		context.bindings.add(newBinding)
+	}
+
+	// Observe only
+	@Step
+	def void doAssignment(ObjectInstance receiver, Field changedField, Value newValue) {
+		val existingBinding = receiver.fieldbindings.findFirst[it.field === changedField]
+		if (existingBinding !== null) {
+			existingBinding.value = newValue
+		} else {
+			val binding = SemanticsFactory::eINSTANCE.createFieldBinding => [
+				field = changedField
+				value = newValue
+			]
+			receiver.fieldbindings.add(binding)
+		}
+	}
+
+	// Observe only
+	@Step
+	def void doAssignment(ArrayInstance array, int index, Value right) {
+		array.value.set(index, right)
+	}
+
 }
 
 @Aspect(className=ForStatement)
@@ -117,13 +199,32 @@ class ForStatementAspect extends StatementAspect {
 	@OverrideAspectMethod
 	@Step
 	def void evaluateStatement(State state) {
-		state.pushNewContext
-		for (_self.declaration.evaluateStatement(state); (_self.condition.evaluateExpression(state) as BooleanValue).
-			value; _self.progression.evaluateStatement(state)) {
+		_self.doPushNextContext(state)
+		for (_self.declaration.evaluateStatement(state); _self.evaluateCondition(state); _self.
+			progression.evaluateStatement(state)) {
 			_self.block.evaluateStatement(state)
 		}
+		_self.doPopCurrentContext(state)
+	}
+
+	// Observe only
+	@Step
+	def void doPushNextContext(State state) {
+		state.pushNewContext
+	}
+
+	// Observe only
+	@Step
+	def void doPopCurrentContext(State state) {
 		state.popCurrentContext
 	}
+
+	// Observe only
+	@Step
+	def boolean evaluateCondition(State state) {
+		return (_self.condition.evaluateExpression(state) as BooleanValue).value
+	}
+
 }
 
 @Aspect(className=IfStatement)
@@ -131,11 +232,17 @@ class IfStatementAspect extends StatementAspect {
 	@OverrideAspectMethod
 	@Step
 	def void evaluateStatement(State state) {
-		if ((_self.expression.evaluateExpression(state) as BooleanValue).value) {
+		if (_self.evaluateCondition(state)) {
 			_self.thenBlock.evaluateStatement(state)
 		} else if (_self.elseBlock !== null) {
 			_self.elseBlock.evaluateStatement(state)
 		}
+	}
+	
+	// Observe only
+	@Step
+	def boolean evaluateCondition(State state) {
+		return (_self.expression.evaluateExpression(state) as BooleanValue).value
 	}
 }
 
@@ -144,9 +251,15 @@ class WhileStatementAspect extends StatementAspect {
 	@OverrideAspectMethod
 	@Step
 	def void evaluateStatement(State state) {
-		while ((_self.condition.evaluateExpression(state) as BooleanValue).value) {
+		while (_self.evaluateCondition(state)) { 
 			_self.block.evaluateStatement(state)
 		}
+	}
+	
+	// Observe only
+	@Step
+	def boolean evaluateCondition(State state) {
+		return (_self.condition.evaluateExpression(state) as BooleanValue).value
 	}
 }
 
@@ -164,8 +277,20 @@ class ReturnAspect extends StatementAspect {
 	@OverrideAspectMethod
 	@Step
 	def void evaluateStatement(State state) {
-		val value = _self.expression.evaluateExpression(state);
-		state.findCurrentFrame.returnValue = value
+		val value = _self.evaluateValue(state); 
+		_self.doReturn(state, value)
+	}
+	
+	// Observe only
+	@Step
+	def Value evaluateValue(State state) {
+		return _self.expression.evaluateExpression(state);
+	}
+	
+	// Observe only
+	@Step
+	def void doReturn(State state, Value value) {
+		state.findCurrentFrame.returnValue = value 
 	}
 }
 

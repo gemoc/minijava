@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="ASCII"?>
+<miniJava:Program xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:miniJava="http://org.tetrabox.minijava.xminijava/miniJava/">
+  <classes xsi:type="miniJava:Class" name="HelloWorld">
+    <members xsi:type="miniJava:Method" name="printHello" access="public">
+      <typeRef xsi:type="miniJava:VoidTypeRef"/>
+      <body>
+        <statements xsi:type="miniJava:Assignment">
+          <assignee xsi:type="miniJava:VariableDeclaration" name="message">
+            <typeRef xsi:type="miniJava:StringTypeRef"/>
+          </assignee>
+          <value xsi:type="miniJava:StringConstant" value="Hello world!"/>
+        </statements>
+        <statements xsi:type="miniJava:PrintStatement">
+          <expression xsi:type="miniJava:SymbolRef" symbol="//@classes.0/@members.0/@body/@statements.0/@assignee"/>
+        </statements>
+      </body>
+    </members>
+    <members xsi:type="miniJava:Method" name="main" access="public" static="true">
+      <typeRef xsi:type="miniJava:VoidTypeRef"/>
+      <params name="args">
+        <typeRef xsi:type="miniJava:ArrayTypeRef">
+          <typeRef xsi:type="miniJava:StringTypeRef"/>
+        </typeRef>
+      </params>
+      <body>
+        <statements xsi:type="miniJava:Assignment">
+          <assignee xsi:type="miniJava:VariableDeclaration" name="helloWorld">
+            <typeRef xsi:type="miniJava:ClassRef" referencedClass="//@classes.0"/>
+          </assignee>
+          <value xsi:type="miniJava:NewObject" type="//@classes.0"/>
+        </statements>
+        <statements xsi:type="miniJava:MethodCall" method="//@classes.0/@members.0">
+          <receiver xsi:type="miniJava:SymbolRef" symbol="//@classes.0/@members.1/@body/@statements.0/@assignee"/>
+        </statements>
+      </body>
+    </members>
+  </classes>
+</miniJava:Program>

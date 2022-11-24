@@ -1,0 +1,20 @@
+class ExampleA {
+
+	public static void main(String[] args) {
+		A a = new A(); 
+		a.x = 12;
+		System.out.println("Value of a.x: " +a.x);
+		a.x = -20;
+		System.out.println("Value of a.x: " +a.x);
+	}
+}
+
+
+class A {
+	public int x;
+	
+	public A() {
+		this.x = 0;
+	}
+	
+}
